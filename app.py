@@ -1,4 +1,6 @@
-.set_page_config(page_title="Previsão de Obesidade", layout="centered")
+import streamlit as st
+
+st.set_page_config(page_title="Previsão de Obesidade", layout="centered")
 
 # Título
 st.title("🔍 Previsão de Nível de Obesidade")
