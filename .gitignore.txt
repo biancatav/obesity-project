@@ -1,6 +1,3 @@
-# Ignora ambientes virtuais
 venv/
-
-# Ignora arquivos temporários
 __pycache__/
 *.pyc

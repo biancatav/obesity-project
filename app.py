@@ -1,4 +1,7 @@
 import streamlit as st
+import joblib
+import numpy as np
+import pandas as pd  # ← essa linha é a correção!
 
 st.set_page_config(page_title="Previsão de Obesidade", layout="centered")
 
