@@ -1,60 +1,83 @@
 import streamlit as st
-import joblib
 import numpy as np
-import pandas as pd
+import joblib
 
-st.set_page_config(page_title="Previsão de Obesidade", layout="centered")
+# === Configurações de página ===
+st.set_page_config(page_title="Previsão de Obesidade", page_icon="🍔", layout="centered")
 
-# Título
-st.title("🔍 Previsão de Nível de Obesidade")
-st.markdown("Preencha os dados abaixo para prever o nível de obesidade:")
+# === Carrega modelo e labels ===
+modelo, scaler = joblib.load("modelo_obesidade_final.pkl")
+labels = joblib.load("labels_obesidade.npy")
 
-# Campos de entrada (customize conforme suas features)
-gender = st.selectbox("Gênero", ["Male", "Female"])
-age = st.slider("Idade", 10, 80, 25)
-height = st.number_input("Altura (em metros)", min_value=1.0, max_value=2.5, value=1.70)
-weight = st.number_input("Peso (em kg)", min_value=30.0, max_value=200.0, value=70.0)
-favc = st.selectbox("Consome alimentos altamente calóricos com frequência?", ["yes", "no"])
-fcvc = st.slider("Frequência de consumo de vegetais (0-3)", 0.0, 3.0, 2.0)
-ncp = st.slider("Número de refeições por dia", 1.0, 6.0, 3.0)
-caec = st.selectbox("Consome alimentos entre as refeições?", ["no", "Sometimes", "Frequently", "Always"])
-smoke = st.selectbox("Fuma?", ["yes", "no"])
-scc = st.selectbox("Segue conselhos de profissionais da saúde?", ["yes", "no"])
-calc = st.selectbox("Consumo de álcool", ["no", "Sometimes", "Frequently"])
-ch2o = st.slider("Consumo diário de água (litros)", 0.0, 5.0, 2.0)
-faf = st.slider("Frequência de atividade física", 0.0, 3.0, 1.0)
-tue = st.slider("Tempo de uso de tecnologia (horas por dia)", 0.0, 5.0, 2.0)
+st.markdown(
+    """
+    <h1 style='text-align: center; color: #4B8BBE;'>🔍 Previsão de Obesidade</h1>
+    <p style='text-align: center;'>Preencha o formulário abaixo para estimar sua categoria de obesidade com base em características comportamentais, físicas e sociais.</p>
+    <hr style='border-top: 1px solid #bbb;'>
+    """, unsafe_allow_html=True
+)
 
-# Feature Engineering simplificada
-bmi = weight / (height ** 2)
-risk_score = int(favc == "yes") + int(caec in ["Always", "Frequently"]) + \
-             int(calc == "Frequently") + int(scc == "no") + int(smoke == "yes")
-water_per_kg = ch2o / weight
-active_vs_sedentary = faf - tue
+# === Formulário ===
+with st.form("form_obesidade"):
+    col1, col2 = st.columns(2)
 
-# Montar DataFrame com dados para predição
-df_input = pd.DataFrame([{
-    "Gender": 1 if gender == "Male" else 0,
-    "Age": age,
-    "Height": height,
-    "Weight": weight,
-    "FAVC": 1 if favc == "yes" else 0,
-    "FCVC": fcvc,
-    "NCP": ncp,
-    "CAEC": {"no": 0, "Sometimes": 1, "Frequently": 2, "Always": 3}[caec],
-    "SMOKE": 1 if smoke == "yes" else 0,
-    "CH2O": ch2o,
-    "SCC": 1 if scc == "yes" else 0,
-    "FAF": faf,
-    "TUE": tue,
-    "CALC": {"no": 0, "Sometimes": 1, "Frequently": 2}[calc],
-    "BMI": bmi,
-    "risk_score": risk_score,
-    "water_per_kg": water_per_kg,
-    "active_vs_sedentary": active_vs_sedentary
-}])
+    with col1:
+        genero = st.selectbox("Gênero", ["masculino", "feminino"])
+        idade = st.slider("Idade", 5, 100, 30)
+        peso = st.number_input("Peso (kg)", min_value=30.0, max_value=200.0, step=0.5)
+        altura = st.number_input("Altura (m)", min_value=1.0, max_value=2.5, step=0.01)
+        historico_familiar = st.selectbox("Histórico familiar de sobrepeso?", ["sim", "não"])
 
-# Botão de previsão
-if st.button("🔮 Prever"):
-    pred = model.predict(df_input)[0]
-    st.success(f"✅ Previsão: **{pred}**")
+
+    with col2:
+        faf = st.number_input("Atividade Física por Semana (FAF em horas)", min_value=0, max_value=20, step=1)
+        tue = st.number_input("Tempo Usando Dispositivos Eletrônicos (TUE em horas)", min_value=0, max_value=24, step=1)
+        favc = st.selectbox("Consome comida calórica frequentemente (FAVC)?", ["sim", "não"])
+        caec = st.selectbox("Frequência de lanche entre refeições (CAEC)", ["nunca", "às vezes", "frequentemente", "sempre"])
+        calc = st.selectbox("Consumo de álcool (CALC)", ["nunca", "às vezes", "frequentemente", "sempre"])
+        mtrans = st.selectbox("Meio de transporte", ["caminhada", "bicicleta", "moto", "automóvel", "transporte público"])
+        
+        
+        
+
+    submit = st.form_submit_button("📊 Prever")
+
+# === Previsão ===
+if submit:
+    imc = peso / (altura ** 2)
+
+    map_binario = {"sim": 1, "não": 0}
+    map_ordem = {"nunca": 0, "às vezes": 1, "frequentemente": 2, "sempre": 3}
+    map_transporte = {
+        "caminhada": 0,
+        "bicicleta": 0,
+        "moto": 1,
+        "automóvel": 2,
+        "transporte público": 3
+    }
+    map_genero = {"masculino": 1, "feminino": 0}
+
+    score_comport = (
+        (map_binario[favc] == 1) +
+        (map_ordem[caec] >= 2) +
+        (map_ordem[calc] >= 2)
+    )
+
+    score_sedent = (
+        (faf < 1) +
+        (tue < 1) +
+        (map_transporte[mtrans] in [1, 2])
+    )
+
+    risco_social = (
+        (map_binario[historico_familiar] == 1) +
+        (map_genero[genero] == 1) +
+        (idade > 40)
+    )
+
+    entrada = np.array([[imc, score_comport, score_sedent, risco_social]])
+    entrada_esc = scaler.transform(entrada)
+    pred = modelo.predict(entrada_esc)[0]
+
+    st.markdown("---")
+    st.success(f"🧠 Resultado: Categoria de obesidade prevista é **{labels[pred]}**")
