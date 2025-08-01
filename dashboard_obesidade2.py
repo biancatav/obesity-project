@@ -45,9 +45,9 @@ with aba1:
     st.markdown("""
     Foram desenvolvidas variáveis compostas para melhorar a capacidade explicativa do modelo, como por exemplo:
     - `IMC`: Índice de Massa Corporal.
-    - `score_comport`: comportamento alimentar e consumo.
-    - `score_sedent`: hábitos sedentários e baixa ingestão de água.
-    - `risco_social`: combinação de idade com sedentarismo.
+    - `score_comport`: comportamento alimentar e consumo de água.
+    - `score_sedent`: hábitos relacionados a execuçãod e atividade física e mobilidade
+    - `risco_social`: combinação de fatores genéticos como idade, gênero e histórico familiar
     """)
 
     st.markdown("### 🤖 Modelo Utilizado: Random Forest Classifier")
